@@ -1,0 +1,27 @@
+{
+  "name": "lifebuddy",
+  "version": "1.0.0",
+  "description": "that magic app that makes life easier!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danabradbury/lifebuddy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/danabradbury/lifebuddy/issues"
+  },
+  "homepage": "https://github.com/danabradbury/lifebuddy#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

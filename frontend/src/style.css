@@ -1,0 +1,241 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+    sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #0f172a;
+  background-color: #0f172a;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1e293b, #020617 55%);
+  color: #e5e7eb;
+}
+
+#app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.auth-card {
+  max-width: 420px;
+  margin: 6rem auto;
+  padding: 2rem;
+  background: rgba(15, 23, 42, 0.92);
+  border-radius: 1.25rem;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-card h1 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+label span {
+  color: #e5e7eb;
+}
+
+input {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.95rem;
+  background: rgba(15, 23, 42, 0.8);
+  color: #e5e7eb;
+}
+
+input:focus {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+button {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.55rem 1.3rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.16s ease-out;
+}
+
+button.primary {
+  background: linear-gradient(135deg, #22c55e, #4ade80);
+  color: #052e16;
+}
+
+button.secondary {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: #e5e7eb;
+}
+
+button.ghost {
+  background: transparent;
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.4);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  box-shadow: none;
+}
+
+.error {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #fecaca;
+}
+
+.nag-bar {
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: radial-gradient(circle at top left, #f97316, #ea580c);
+  color: #fefce8;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-email {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.next-up,
+.habit-groups section {
+  margin-top: 0.5rem;
+}
+
+.next-up h2,
+.habit-groups h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.9rem;
+}
+
+.card {
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.55);
+}
+
+.habit-card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.habit-card .description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.habit-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  justify-content: flex-end;
+}
+
+.habit-card.status-done {
+  border-color: #22c55e;
+}
+
+.habit-card.status-snoozed {
+  border-color: #38bdf8;
+}
+
+.habit-card.status-skipped {
+  border-color: #f97316;
+}
+
+@media (max-width: 640px) {
+  #app {
+    padding: 1.5rem 1rem 2.25rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .auth-card {
+    margin-top: 3rem;
+  }
+}

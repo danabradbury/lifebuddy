@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lifebuddy Habit Assistant backend (API, Lambda, DynamoDB)
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10
+    MemorySize: 256
+    Architectures:
+      - x86_64
+    Handler: dist/handler.handler
+    Environment:
+      Variables:
+        TABLE_USERS: !Ref UsersTable
+        TABLE_HABITS: !Ref HabitsTable
+        TABLE_HABIT_CHECKINS: !Ref HabitCheckinsTable
+
+Parameters:
+  StageName:
+    Type: String
+    Default: dev
+
+Resources:
+  LifebuddyApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref StageName
+
+  LifebuddyBackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Events:
+        AnyRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /{proxy+}
+            Method: ANY
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  HabitsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  HabitCheckinsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  ReminderScheduler:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(5 minutes)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ReminderFunction.Arn
+          Id: ReminderFunctionTarget
+
+  ReminderPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ReminderFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ReminderScheduler.Arn
+
+  ReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: dist/reminder.handler
+      Events: {}
+      Environment:
+        Variables:
+          TABLE_HABITS: !Ref HabitsTable
+          TABLE_HABIT_CHECKINS: !Ref HabitCheckinsTable
+
+Outputs:
+  ApiUrl:
+    Description: Base URL for the Lifebuddy HTTP API
+    Value: !Sub 'https://${LifebuddyApi}.execute-api.${AWS::Region}.amazonaws.com'
+
