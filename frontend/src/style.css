@@ -167,6 +167,27 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tabs button {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #94a3b8;
+}
+
+.tabs button.active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #e5e7eb;
 }
 
 .user-email {
@@ -227,6 +248,51 @@ button:disabled {
 
 .habit-card.status-skipped {
   border-color: #f97316;
+}
+
+.task-card {
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.task-card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.create-habit {
+  margin-top: 0.75rem;
+}
+
+.create-habit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.create-habit-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.create-habit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+select {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  background: rgba(15, 23, 42, 0.8);
+  color: #e5e7eb;
+}
+
+select:focus {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+  border-color: transparent;
 }
 
 @media (max-width: 640px) {
