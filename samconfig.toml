@@ -1,0 +1,11 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "life-buddy"
+s3_bucket = "danas-iac-bucket"
+s3_prefix = "life-buddy"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "StageName=\"dev\" JwtSecret=\"13ce545bc03ea7091a2efcbb960010b71bf229b740a1f78e74f2ccf6c63f6072\"" 
+image_repositories = []
+
