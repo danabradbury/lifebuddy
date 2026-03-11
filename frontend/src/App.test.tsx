@@ -23,7 +23,7 @@ describe("App", () => {
     window.localStorage.removeItem("lifebuddy-auth");
 
     // Mock fetch to avoid hitting real backend
-    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValueOnce({
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         token: "test-token",
