@@ -4,6 +4,10 @@ import "@testing-library/jest-dom/vitest";
 import { App } from "./App";
 
 describe("App", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders auth form when not authenticated", () => {
     // Ensure no stale auth is present
     window.localStorage.removeItem("lifebuddy-auth");
@@ -15,40 +19,29 @@ describe("App", () => {
     expect(screen.getByText("Create account")).toBeInTheDocument();
   });
 
-  describe("login flow", () => {
-    let fetchMock: ReturnType<typeof vi.spyOn>;
+  it("calls auth endpoint on login click when fields are filled", async () => {
+    window.localStorage.removeItem("lifebuddy-auth");
 
-    afterEach(() => {
-      fetchMock.mockRestore();
+    // Mock fetch to avoid hitting real backend
+    const fetchMock = vi.spyOn(global, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        token: "test-token",
+        user: { email: "test@example.com" },
+      }),
+    } as any);
+
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "test@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "secret" },
     });
 
-    it("calls auth endpoint on login click when fields are filled", async () => {
-      window.localStorage.removeItem("lifebuddy-auth");
+    fireEvent.click(screen.getByText("Log in"));
 
-      // Mock fetch to avoid hitting real backend
-      fetchMock = vi
-        .spyOn(global, "fetch")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            token: "test-token",
-            user: { email: "test@example.com" },
-          }),
-        } as any);
-
-      render(<App />);
-
-      fireEvent.change(screen.getByLabelText("Email"), {
-        target: { value: "test@example.com" },
-      });
-      fireEvent.change(screen.getByLabelText("Password"), {
-        target: { value: "secret" },
-      });
-
-      fireEvent.click(screen.getByText("Log in"));
-
-      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
   });
 });
