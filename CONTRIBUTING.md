@@ -55,6 +55,8 @@ From the repo root you can also run:
 ### Secrets and environment
 
 - Do **not** commit secrets.
-  - `.env` and `frontend/.env` are ignored by git.
+  - The root `.env` file is ignored by git.
+  - `frontend/.env` is committed and should only contain non-sensitive defaults (for example, `VITE_API_BASE`). Do not add secrets to this file.
+  - For local frontend-only secrets, use a separate untracked env file (for example, `frontend/.env.local`) and ensure it is listed in `.gitignore`.
 - Backend secrets (e.g. `JWT_SECRET`) are provided via Lambda environment variables configured in SAM (`JwtSecret` parameter).
 
