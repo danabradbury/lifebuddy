@@ -12,6 +12,7 @@ Globals:
     Handler: dist/handler.handler
     Environment:
       Variables:
+        JWT_SECRET: !Ref JwtSecret
         TABLE_USERS: !Ref UsersTable
         TABLE_HABITS: !Ref HabitsTable
         TABLE_HABIT_CHECKINS: !Ref HabitCheckinsTable
@@ -20,24 +21,118 @@ Parameters:
   StageName:
     Type: String
     Default: dev
+  JwtSecret:
+    Type: String
+    NoEcho: true
 
 Resources:
   LifebuddyApi:
     Type: AWS::Serverless::HttpApi
     Properties:
       StageName: !Ref StageName
+      CorsConfiguration:
+        AllowOrigins:
+          - 'http://localhost:5173'
+        AllowMethods:
+          - GET
+          - POST
+          - PATCH
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - '*'
+        AllowCredentials: false
 
   LifebuddyBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: backend/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HabitsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HabitCheckinsTable
       Events:
-        AnyRoute:
+        AuthSignup:
           Type: HttpApi
           Properties:
             ApiId: !Ref LifebuddyApi
-            Path: /{proxy+}
-            Method: ANY
+            Path: /auth/signup
+            Method: POST
+        AuthLogin:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /auth/login
+            Method: POST
+        HabitsList:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /habits
+            Method: GET
+        HabitsCreate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /habits
+            Method: POST
+        HabitsUpdate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /habits/{id}
+            Method: PATCH
+        HabitsDelete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /habits/{id}
+            Method: DELETE
+        HabitCheckinsCreate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /habits/{id}/checkins
+            Method: POST
+        HabitCheckinsToday:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /habits/{id}/checkins
+            Method: GET
+  ReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: dist/reminder.handler
+      Events: {}
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HabitsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HabitCheckinsTable
+
+  ReminderScheduler:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(5 minutes)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ReminderFunction.Arn
+          Id: ReminderFunctionTarget
+
+  ReminderPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ReminderFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ReminderScheduler.Arn
 
   UsersTable:
     Type: AWS::DynamoDB::Table
@@ -83,34 +178,6 @@ Resources:
           KeyType: HASH
         - AttributeName: sk
           KeyType: RANGE
-
-  ReminderScheduler:
-    Type: AWS::Events::Rule
-    Properties:
-      ScheduleExpression: rate(5 minutes)
-      State: ENABLED
-      Targets:
-        - Arn: !GetAtt ReminderFunction.Arn
-          Id: ReminderFunctionTarget
-
-  ReminderPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref ReminderFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt ReminderScheduler.Arn
-
-  ReminderFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: backend/
-      Handler: dist/reminder.handler
-      Events: {}
-      Environment:
-        Variables:
-          TABLE_HABITS: !Ref HabitsTable
-          TABLE_HABIT_CHECKINS: !Ref HabitCheckinsTable
 
 Outputs:
   ApiUrl:

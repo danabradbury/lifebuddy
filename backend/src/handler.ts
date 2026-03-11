@@ -1,9 +1,9 @@
 import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyResultV2,
-} from 'aws-lambda'
+} from "aws-lambda";
 
-import { handleLogin, handleSignup, requireAuth, HttpError } from './auth'
+import { handleLogin, handleSignup, requireAuth, HttpError } from "./auth";
 import {
   handleCreateHabit,
   handleCreateCheckin,
@@ -11,76 +11,87 @@ import {
   handleListCheckinsForToday,
   handleListHabits,
   handleUpdateHabit,
-} from './habits'
+} from "./habits";
+import { config } from "./config";
 
 export async function handler(
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyResultV2> {
   try {
-    const path = event.rawPath || event.requestContext.http.path
-    const method = event.requestContext.http.method
+    console.log("does this even log?");
+    console.log("event: ", JSON.stringify(event, null, 2));
+    // lets log out the jwt secret
+    console.log("jwt secret: ", config.jwtSecret);
+    const path = event.rawPath || event.requestContext.http.path;
+    const method = event.requestContext.http.method;
 
-    if (path === '/health') {
-      return json(200, { ok: true, service: 'lifebuddy-backend' })
+    console.log("path: ", path);
+    console.log("method: ", method);
+
+    if (path.endsWith("/health")) {
+      return json(200, { ok: true, service: "lifebuddy-backend" });
     }
 
-    if (path === '/auth/signup' && method === 'POST') {
-      return await handleSignup(event)
+    if (path.endsWith("/auth/signup") && method === "POST") {
+      return await handleSignup(event);
     }
 
-    if (path === '/auth/login' && method === 'POST') {
-      return await handleLogin(event)
+    if (path.endsWith("/auth/login") && method === "POST") {
+      return await handleLogin(event);
     }
+    console.log(
+      "The path was not signup or login, call require login: path: ",
+      path,
+    );
 
     // Routes below require auth
-    const user = requireAuth(event)
+    const user = requireAuth(event);
 
-    if (path === '/habits' && method === 'GET') {
-      return await handleListHabits(event, user)
+    if (path.endsWith("/habits") && method === "GET") {
+      return await handleListHabits(event, user);
     }
 
-    if (path === '/habits' && method === 'POST') {
-      return await handleCreateHabit(event, user)
+    if (path.endsWith("/habits") && method === "POST") {
+      return await handleCreateHabit(event, user);
     }
 
     // /habits/{id} and /habits/{id}/checkins
-    const habitIdMatch = path.match(/^\/habits\/([^/]+)(?:\/(checkins))?$/)
+    const habitIdMatch = path.match(/^\/habits\/([^/]+)(?:\/(checkins))?$/);
     if (habitIdMatch) {
-      const [, habitId, subresource] = habitIdMatch
-      event.pathParameters = { ...(event.pathParameters ?? {}), id: habitId }
+      const [, habitId, subresource] = habitIdMatch;
+      event.pathParameters = { ...(event.pathParameters ?? {}), id: habitId };
 
       if (!subresource) {
-        if (method === 'PATCH') {
-          return await handleUpdateHabit(event, user)
+        if (method === "PATCH") {
+          return await handleUpdateHabit(event, user);
         }
-        if (method === 'DELETE') {
-          return await handleDeleteHabit(event, user)
+        if (method === "DELETE") {
+          return await handleDeleteHabit(event, user);
         }
-      } else if (subresource === 'checkins') {
-        if (method === 'POST') {
-          return await handleCreateCheckin(event, user)
+      } else if (subresource === "checkins") {
+        if (method === "POST") {
+          return await handleCreateCheckin(event, user);
         }
-        if (method === 'GET') {
-          return await handleListCheckinsForToday(event, user)
+        if (method === "GET") {
+          return await handleListCheckinsForToday(event, user);
         }
       }
     }
 
-    return json(404, { message: 'Not Found' })
+    return json(404, { message: "Not Found" });
   } catch (err) {
+    console.error("handler error", err);
     if (err instanceof HttpError) {
-      return json(err.statusCode, { message: err.message })
+      return json(err.statusCode, { message: err.message });
     }
-    console.error('Unhandled error', err)
-    return json(500, { message: 'Internal Server Error' })
+    return json(500, { message: "Internal Server Error" });
   }
 }
 
 function json(statusCode: number, body: unknown): APIGatewayProxyResultV2 {
   return {
     statusCode,
-    headers: { 'content-type': 'application/json' },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
-  }
+  };
 }
-

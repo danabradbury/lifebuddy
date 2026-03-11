@@ -4,7 +4,16 @@
   "description": "that magic app that makes life easier!",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "backend:build": "npm --prefix backend run build",
+    "backend:test": "npm --prefix backend run test",
+    "backend:lint": "npm --prefix backend run lint",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:test": "npm --prefix frontend run test",
+    "frontend:lint": "npm --prefix frontend run lint",
+    "lint": "npm run backend:lint && npm run frontend:lint",
+    "test": "npm run backend:test && npm run frontend:test",
+    "build": "npm run backend:build && npm run frontend:build",
+    "deploy": "npm run backend:build && sam build && sam deploy"
   },
   "repository": {
     "type": "git",

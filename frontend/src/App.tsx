@@ -1,47 +1,47 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import './style.css'
+import React, { useEffect, useMemo, useState } from "react";
+import "./style.css";
 
 type Habit = {
-  habitId: string
-  name: string
-  description?: string
-  preferredTimeOfDay: 'morning' | 'afternoon' | 'evening' | 'any'
-  isActive: boolean
-}
+  habitId: string;
+  name: string;
+  description?: string;
+  preferredTimeOfDay: "morning" | "afternoon" | "evening" | "any";
+  isActive: boolean;
+};
 
-type HabitStatus = 'pending' | 'done' | 'snoozed' | 'skipped'
+type HabitStatus = "pending" | "done" | "snoozed" | "skipped";
 
-type HabitWithStatus = Habit & { status: HabitStatus }
+type HabitWithStatus = Habit & { status: HabitStatus };
 
 type AuthState = {
-  token: string
-  email: string
-} | null
+  token: string;
+  email: string;
+} | null;
 
-const API_BASE = import.meta.env.VITE_API_BASE as string | undefined
+const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
 
 export const App: React.FC = () => {
-  const [auth, setAuth] = useState<AuthState>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [habits, setHabits] = useState<HabitWithStatus[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [auth, setAuth] = useState<AuthState>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [habits, setHabits] = useState<HabitWithStatus[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const apiBase = API_BASE ?? ''
+  const apiBase = API_BASE ?? "";
 
   useEffect(() => {
-    const stored = window.localStorage.getItem('lifebuddy-auth')
+    const stored = window.localStorage.getItem("lifebuddy-auth");
     if (stored) {
-      const parsed = JSON.parse(stored) as AuthState
-      setAuth(parsed)
+      const parsed = JSON.parse(stored) as AuthState;
+      setAuth(parsed);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    if (!auth) return
-    void loadHabits()
-  }, [auth])
+    if (!auth) return;
+    void loadHabits();
+  }, [auth]);
 
   const groupedHabits = useMemo(() => {
     const groups: Record<string, HabitWithStatus[]> = {
@@ -49,91 +49,96 @@ export const App: React.FC = () => {
       afternoon: [],
       evening: [],
       any: [],
-    }
+    };
     for (const h of habits) {
-      groups[h.preferredTimeOfDay ?? 'any'].push(h)
+      groups[h.preferredTimeOfDay ?? "any"].push(h);
     }
-    return groups
-  }, [habits])
+    return groups;
+  }, [habits]);
 
   const nextUp = useMemo(() => {
-    const pending = habits.filter((h) => h.status === 'pending')
-    return pending.slice(0, 3)
-  }, [habits])
+    const pending = habits.filter((h) => h.status === "pending");
+    return pending.slice(0, 3);
+  }, [habits]);
 
   async function loadHabits() {
-    if (!auth) return
-    setLoading(true)
-    setError(null)
+    if (!auth) return;
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`${apiBase}/habits`, {
         headers: {
           Authorization: `Bearer ${auth.token}`,
         },
-      })
+      });
       if (!res.ok) {
-        throw new Error('Failed to load habits')
+        throw new Error("Failed to load habits");
       }
-      const data = (await res.json()) as Habit[]
+      const data = (await res.json()) as Habit[];
       const withStatus: HabitWithStatus[] = data.map((h) => ({
         ...h,
-        status: 'pending',
-      }))
-      setHabits(withStatus)
+        status: "pending",
+      }));
+      setHabits(withStatus);
     } catch (e) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  async function handleAuth(path: 'login' | 'signup') {
+  async function handleAuth(path: "login" | "signup") {
     if (!apiBase) {
-      setError('API base not configured')
-      return
+      setError("API base not configured");
+      return;
     }
-    setLoading(true)
-    setError(null)
+    console.log("handleAuth", path, email, password);
+    if (!email || !password) {
+      setError("Email and password are required");
+      return;
+    }
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`${apiBase}/auth/${path}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        method: "POST",
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
-      })
-      const body = await res.json()
+      });
+      const body = await res.json();
       if (!res.ok) {
-        throw new Error(body.message ?? 'Auth failed')
+        throw new Error(body.message ?? "Auth failed");
       }
       const next: AuthState = {
         token: body.token,
         email: body.user.email,
-      }
-      setAuth(next)
-      window.localStorage.setItem('lifebuddy-auth', JSON.stringify(next))
-      setPassword('')
+      };
+      setAuth(next);
+      window.localStorage.setItem("lifebuddy-auth", JSON.stringify(next));
+      setPassword("");
     } catch (e) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function updateHabitStatus(
     habit: HabitWithStatus,
-    status: Exclude<HabitStatus, 'pending'>,
+    status: Exclude<HabitStatus, "pending">,
   ) {
-    if (!auth) return
-    setLoading(true)
-    setError(null)
+    if (!auth) return;
+    setLoading(true);
+    setError(null);
     try {
       await fetch(`${apiBase}/habits/${habit.habitId}/checkins`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'content-type': 'application/json',
+          "content-type": "application/json",
           Authorization: `Bearer ${auth.token}`,
         },
         body: JSON.stringify({ status }),
-      })
+      });
       setHabits((prev) =>
         prev.map((h) =>
           h.habitId === habit.habitId
@@ -143,11 +148,11 @@ export const App: React.FC = () => {
               }
             : h,
         ),
-      )
+      );
     } catch (e) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -180,7 +185,7 @@ export const App: React.FC = () => {
             <button
               disabled={loading}
               onClick={() => {
-                void handleAuth('login')
+                void handleAuth("login");
               }}
             >
               Log in
@@ -189,7 +194,7 @@ export const App: React.FC = () => {
               className="secondary"
               disabled={loading}
               onClick={() => {
-                void handleAuth('signup')
+                void handleAuth("signup");
               }}
             >
               Create account
@@ -197,18 +202,17 @@ export const App: React.FC = () => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  const hasOverdue = nextUp.length > 0
+  const hasOverdue = nextUp.length > 0;
 
   return (
     <div className="page">
       {hasOverdue && (
         <div className="nag-bar">
-          <strong>Next up:</strong>{' '}
-          {nextUp.map((h) => h.name).join(', ')} — do one before
-          you leave.
+          <strong>Next up:</strong> {nextUp.map((h) => h.name).join(", ")} — do
+          one before you leave.
         </div>
       )}
 
@@ -224,8 +228,8 @@ export const App: React.FC = () => {
           <button
             className="secondary"
             onClick={() => {
-              setAuth(null)
-              window.localStorage.removeItem('lifebuddy-auth')
+              setAuth(null);
+              window.localStorage.removeItem("lifebuddy-auth");
             }}
           >
             Log out
@@ -275,16 +279,16 @@ export const App: React.FC = () => {
         />
       </section>
     </div>
-  )
-}
+  );
+};
 
 type HabitCardProps = {
-  habit: HabitWithStatus
+  habit: HabitWithStatus;
   onAction: (
     habit: HabitWithStatus,
-    status: Exclude<HabitStatus, 'pending'>,
-  ) => void
-}
+    status: Exclude<HabitStatus, "pending">,
+  ) => void;
+};
 
 const HabitCard: React.FC<HabitCardProps> = ({ habit, onAction }) => {
   return (
@@ -296,56 +300,41 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onAction }) => {
         )}
       </div>
       <div className="habit-actions">
-        <button
-          onClick={() => onAction(habit, 'done')}
-          className="primary"
-        >
+        <button onClick={() => onAction(habit, "done")} className="primary">
           Done
         </button>
         <button
-          onClick={() => onAction(habit, 'snoozed')}
+          onClick={() => onAction(habit, "snoozed")}
           className="secondary"
         >
           Snooze
         </button>
-        <button
-          onClick={() => onAction(habit, 'skipped')}
-          className="ghost"
-        >
+        <button onClick={() => onAction(habit, "skipped")} className="ghost">
           Skip
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
 type HabitGroupProps = {
-  title: string
-  habits: HabitWithStatus[]
-  onAction: HabitCardProps['onAction']
-}
+  title: string;
+  habits: HabitWithStatus[];
+  onAction: HabitCardProps["onAction"];
+};
 
-const HabitGroup: React.FC<HabitGroupProps> = ({
-  title,
-  habits,
-  onAction,
-}) => {
+const HabitGroup: React.FC<HabitGroupProps> = ({ title, habits, onAction }) => {
   if (!habits.length) {
-    return null
+    return null;
   }
   return (
     <section>
       <h2>{title}</h2>
       <div className="cards">
         {habits.map((h) => (
-          <HabitCard
-            key={h.habitId}
-            habit={h}
-            onAction={onAction}
-          />
+          <HabitCard key={h.habitId} habit={h} onAction={onAction} />
         ))}
       </div>
     </section>
-  )
-}
-
+  );
+};

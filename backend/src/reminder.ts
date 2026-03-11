@@ -1,13 +1,13 @@
-import { ScanCommand } from '@aws-sdk/lib-dynamodb'
+import { ScanCommand } from "@aws-sdk/lib-dynamodb";
 
-import { config } from './config'
-import { docClient } from './db'
-import type { Habit } from './models'
+import { config } from "./config";
+import { docClient } from "./db";
+import type { Habit } from "./models";
 
 type ReminderEvent = {
   // EventBridge scheduled event shape (not used in MVP)
-  id: string
-}
+  id: string;
+};
 
 export async function handler(_event: ReminderEvent) {
   // Simple MVP: scan habits and log which ones are active.
@@ -17,17 +17,16 @@ export async function handler(_event: ReminderEvent) {
       TableName: config.tables.habits,
       Limit: 25,
     }),
-  )
+  );
 
-  const habits = (res.Items || []) as Habit[]
+  const habits = (res.Items || []) as Habit[];
 
   console.log(
     `Reminder tick: found ${habits.length} habits to consider for notifications`,
-  )
+  );
 
   return {
     ok: true,
     considered: habits.length,
-  }
+  };
 }
-

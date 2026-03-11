@@ -1,5 +1,9 @@
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
     sans-serif;
   line-height: 1.5;
   font-weight: 400;
