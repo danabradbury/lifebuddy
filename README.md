@@ -7,7 +7,7 @@ That magic app that makes life easier – a proactive habit and task assistant.
 Lifebuddy is a small web + serverless backend that helps you:
 
 - Track **daily habits** (e.g. creatine, pushups, walks).
-- See a focused **\"Today\" view** with a clear **Next up** queue.
+- See a focused **"Today" view** with a clear **Next up** queue.
 - Record quick **check‑ins** (Done / Snoozed / Skipped).
 - Grow over time into a system that also handles chores and long‑running projects.
 
