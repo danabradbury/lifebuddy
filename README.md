@@ -107,6 +107,18 @@ Or individually:
   - `npm run frontend:test`
   - `npm run frontend:build`
 
+### CI (GitHub Actions)
+
+Workflow file: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+On every **push** and **pull_request** to `main`:
+
+1. **Lint** – backend and frontend ESLint.
+2. **Test** – backend Jest, frontend Vitest.
+3. **Build** – backend `tsc`, frontend Vite build.
+
+No deploy in CI by default; add a separate workflow or manual step when you want to deploy from GitHub.
+
 ### Key files
 
 - **Backend**
