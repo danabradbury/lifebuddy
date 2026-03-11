@@ -75,10 +75,42 @@ export const App: React.FC = () => {
         throw new Error("Failed to load habits");
       }
       const data = (await res.json()) as Habit[];
-      const withStatus: HabitWithStatus[] = data.map((h) => ({
-        ...h,
-        status: "pending",
-      }));
+
+      // For each habit, ask the backend for today's check-ins so we can
+      // reflect Done / Snoozed / Skipped on initial load.
+      const withStatus: HabitWithStatus[] = [];
+      for (const habit of data) {
+        try {
+          const checkinsRes = await fetch(
+            `${apiBase}/habits/${habit.habitId}/checkins`,
+            {
+              headers: {
+                Authorization: `Bearer ${auth.token}`,
+              },
+            },
+          );
+          let status: HabitStatus = "pending";
+          if (checkinsRes.ok) {
+            const checkins = (await checkinsRes.json()) as {
+              status: HabitStatus;
+            }[];
+            if (checkins.length > 0) {
+              // Use the last checkin's status for today
+              status = checkins[checkins.length - 1]!.status;
+            }
+          }
+          withStatus.push({
+            ...habit,
+            status,
+          });
+        } catch {
+          withStatus.push({
+            ...habit,
+            status: "pending",
+          });
+        }
+      }
+
       setHabits(withStatus);
     } catch (e) {
       setError((e as Error).message);
@@ -239,6 +271,23 @@ export const App: React.FC = () => {
 
       {error && <p className="error">{error}</p>}
 
+      <section className="create-habit">
+        <CreateHabitForm
+          onCreated={(habit) => {
+            setHabits((prev) => [
+              {
+                ...habit,
+                status: "pending",
+              },
+              ...prev,
+            ]);
+          }}
+          apiBase={apiBase}
+          token={auth.token}
+          setError={setError}
+        />
+      </section>
+
       <section className="next-up">
         <h2>Next up</h2>
         {nextUp.length === 0 ? (
@@ -291,6 +340,7 @@ type HabitCardProps = {
 };
 
 const HabitCard: React.FC<HabitCardProps> = ({ habit, onAction }) => {
+  const isDone = habit.status === "done";
   return (
     <div className={`card habit-card status-${habit.status}`}>
       <div>
@@ -298,9 +348,16 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onAction }) => {
         {habit.description && (
           <p className="description">{habit.description}</p>
         )}
+        {isDone && (
+          <p className="description">Completed for today 🎯</p>
+        )}
       </div>
       <div className="habit-actions">
-        <button onClick={() => onAction(habit, "done")} className="primary">
+        <button
+          onClick={() => onAction(habit, "done")}
+          className="primary"
+          disabled={isDone}
+        >
           Done
         </button>
         <button
@@ -338,3 +395,113 @@ const HabitGroup: React.FC<HabitGroupProps> = ({ title, habits, onAction }) => {
     </section>
   );
 };
+
+type CreateHabitFormProps = {
+  apiBase: string;
+  token: string;
+  onCreated: (habit: Habit) => void;
+  setError: (message: string | null) => void;
+};
+
+const CreateHabitForm: React.FC<CreateHabitFormProps> = ({
+  apiBase,
+  token,
+  onCreated,
+  setError,
+}) => {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [timeOfDay, setTimeOfDay] = useState<
+    Habit["preferredTimeOfDay"]
+  >("any");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError("Habit name is required");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase}/habits`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          frequency: "daily",
+          preferredTimeOfDay: timeOfDay,
+          reminderChannel: "in_app",
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.message ?? "Failed to create habit");
+      }
+      onCreated(body as Habit);
+      setName("");
+      setDescription("");
+      setTimeOfDay("any");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form className="card create-habit-card" onSubmit={handleSubmit}>
+      <div className="create-habit-fields">
+        <div className="field">
+          <label>
+            <span>New daily habit</span>
+            <input
+              type="text"
+              placeholder="e.g. Take creatine with coffee"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="field">
+          <label>
+            <span>Time of day</span>
+            <select
+              value={timeOfDay}
+              onChange={(e) =>
+                setTimeOfDay(e.target.value as Habit["preferredTimeOfDay"])
+              }
+            >
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+              <option value="any">Any time</option>
+            </select>
+          </label>
+        </div>
+        <div className="field">
+          <label>
+            <span>Details (optional)</span>
+            <input
+              type="text"
+              placeholder="Context or where it fits in your routine"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
+      <div className="create-habit-actions">
+        <button type="submit" className="primary" disabled={submitting}>
+          Add habit
+        </button>
+      </div>
+    </form>
+  );
+}
+

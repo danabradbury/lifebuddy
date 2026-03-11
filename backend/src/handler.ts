@@ -56,7 +56,8 @@ export async function handler(
     }
 
     // /habits/{id} and /habits/{id}/checkins
-    const habitIdMatch = path.match(/^\/habits\/([^/]+)(?:\/(checkins))?$/);
+    // Allow an optional stage prefix (e.g. "/dev/habits/...") by not anchoring at the start.
+    const habitIdMatch = path.match(/\/habits\/([^/]+)(?:\/(checkins))?$/);
     if (habitIdMatch) {
       const [, habitId, subresource] = habitIdMatch;
       event.pathParameters = { ...(event.pathParameters ?? {}), id: habitId };
