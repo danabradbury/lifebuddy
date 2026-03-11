@@ -348,9 +348,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onAction }) => {
         {habit.description && (
           <p className="description">{habit.description}</p>
         )}
-        {isDone && (
-          <p className="description">Completed for today 🎯</p>
-        )}
+        {isDone && <p className="description">Completed for today 🎯</p>}
       </div>
       <div className="habit-actions">
         <button
@@ -411,9 +409,8 @@ const CreateHabitForm: React.FC<CreateHabitFormProps> = ({
 }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [timeOfDay, setTimeOfDay] = useState<
-    Habit["preferredTimeOfDay"]
-  >("any");
+  const [timeOfDay, setTimeOfDay] =
+    useState<Habit["preferredTimeOfDay"]>("any");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -503,5 +500,4 @@ const CreateHabitForm: React.FC<CreateHabitFormProps> = ({
       </div>
     </form>
   );
-}
-
+};
