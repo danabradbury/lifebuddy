@@ -1,9 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { App } from "./App";
 
 describe("App", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders auth form when not authenticated", () => {
     // Ensure no stale auth is present
     window.localStorage.removeItem("lifebuddy-auth");
@@ -38,8 +42,6 @@ describe("App", () => {
 
     fireEvent.click(screen.getByText("Log in"));
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
-    fetchMock.mockRestore();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
   });
 });
