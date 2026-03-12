@@ -19,6 +19,8 @@ Globals:
         TABLE_TASKS: !Ref TasksTable
         TABLE_TASK_COMPLETIONS: !Ref TaskCompletionsTable
         TABLE_GOALS: !Ref GoalsTable
+        TABLE_HOUSEHOLDS: !Ref HouseholdsTable
+        TABLE_HOUSEHOLD_MEMBERS: !Ref HouseholdMembersTable
 
 Parameters:
   StageName:
@@ -63,6 +65,10 @@ Resources:
             TableName: !Ref TaskCompletionsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref GoalsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HouseholdsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HouseholdMembersTable
       Events:
         AuthSignup:
           Type: HttpApi
@@ -184,6 +190,18 @@ Resources:
             ApiId: !Ref LifebuddyApi
             Path: /goals/{id}
             Method: DELETE
+        HouseholdsList:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /households
+            Method: GET
+        HouseholdsCreate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /households
+            Method: POST
   ReminderFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -199,6 +217,8 @@ Resources:
           TABLE_TASKS: !Ref TasksTable
           TABLE_TASK_COMPLETIONS: !Ref TaskCompletionsTable
           TABLE_GOALS: !Ref GoalsTable
+          TABLE_HOUSEHOLDS: !Ref HouseholdsTable
+          TABLE_HOUSEHOLD_MEMBERS: !Ref HouseholdMembersTable
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
@@ -212,6 +232,10 @@ Resources:
             TableName: !Ref TaskCompletionsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref GoalsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HouseholdsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HouseholdMembersTable
 
   ReminderScheduler:
     Type: AWS::Events::Rule
@@ -306,6 +330,36 @@ Resources:
           KeyType: RANGE
 
   GoalsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  HouseholdsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  HouseholdMembersTable:
     Type: AWS::DynamoDB::Table
     Properties:
       BillingMode: PAY_PER_REQUEST

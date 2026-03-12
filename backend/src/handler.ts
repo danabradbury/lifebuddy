@@ -28,6 +28,10 @@ import {
   handleListGoals,
   handleUpdateGoal,
 } from "./goals";
+import {
+  handleCreateHousehold,
+  handleListHouseholds,
+} from "./households";
 
 export async function handler(
   event: APIGatewayProxyEventV2,
@@ -134,6 +138,14 @@ export async function handler(
       if (method === "DELETE") {
         return await handleDeleteGoal(event, user);
       }
+    }
+
+    // /households
+    if (path.endsWith("/households") && method === "GET") {
+      return await handleListHouseholds(event, user);
+    }
+    if (path.endsWith("/households") && method === "POST") {
+      return await handleCreateHousehold(event, user);
     }
 
     return json(404, { message: "Not Found" });

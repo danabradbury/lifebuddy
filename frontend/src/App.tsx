@@ -76,6 +76,9 @@ export const App: React.FC = () => {
 
   const apiBase = API_BASE ?? "";
   const today = todayStr();
+  const isKiosk =
+    typeof window !== "undefined" &&
+    window.location.pathname.toLowerCase().endsWith("/kiosk");
 
   useEffect(() => {
     const stored = window.localStorage.getItem("lifebuddy-auth");
@@ -141,6 +144,16 @@ export const App: React.FC = () => {
       setError((e as Error).message),
     ).finally(() => setLoading(false));
   }, [auth, loadHabits, loadTasks, loadGoals]);
+
+  useEffect(() => {
+    if (!auth || !isKiosk) return;
+    const id = window.setInterval(() => {
+      void loadHabits();
+      void loadTasks();
+      void loadGoals();
+    }, 60000);
+    return () => window.clearInterval(id);
+  }, [auth, isKiosk, loadHabits, loadTasks, loadGoals]);
 
   const groupedHabits = useMemo(() => {
     const groups: Record<string, HabitWithStatus[]> = {
@@ -320,6 +333,72 @@ export const App: React.FC = () => {
   }
 
   const hasNextUp = nextUpHabits.length > 0 || nextUpTasks.length > 0;
+
+  if (isKiosk) {
+    return (
+      <div className="page">
+        {hasNextUp && (
+          <div className="nag-bar">
+            <strong>Next up:</strong>{" "}
+            {[...nextUpHabits.map((h) => h.name), ...nextUpTasks.map((t) => t.title)]
+              .slice(0, 4)
+              .join(", ")}{" "}
+            — do one before you leave.
+          </div>
+        )}
+
+        <header className="header">
+          <div>
+            <h1>Focus</h1>
+            <p className="subtitle">
+              Habits due today and tasks due or overdue.
+            </p>
+          </div>
+        </header>
+
+        {error && <p className="error">{error}</p>}
+        {loading && <p className="subtitle">Loading…</p>}
+
+        <section className="next-up">
+          {pendingHabitsDueToday.length === 0 && nextUpTasks.length === 0 ? (
+            <p>Nothing due right now. Nice work.</p>
+          ) : (
+            <div className="cards">
+              {pendingHabitsDueToday.map((habit) => (
+                <HabitCard
+                  key={habit.habitId}
+                  habit={habit}
+                  onAction={updateHabitStatus}
+                />
+              ))}
+              {nextUpTasks.map((task) => (
+                <TaskCard
+                  key={task.taskId}
+                  task={task}
+                  onComplete={() => void completeTask(task)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {habitsDueToday.length > 0 && (
+          <section className="habit-groups">
+            <h2>All habits due today</h2>
+            <div className="cards">
+              {habitsDueToday.map((h) => (
+                <HabitCard
+                  key={h.habitId}
+                  habit={h}
+                  onAction={updateHabitStatus}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="page">

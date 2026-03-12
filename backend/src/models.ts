@@ -73,6 +73,21 @@ export interface Goal {
   updatedAt: string;
 }
 
+export interface Household {
+  householdId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HouseholdMember {
+  householdId: string;
+  userId: string;
+  role: "owner" | "member";
+  joinedAt: string;
+  householdName: string;
+}
+
 // DynamoDB key helpers
 
 export const UserKeys = {
@@ -103,4 +118,14 @@ export const TaskCompletionKeys = {
 export const GoalKeys = {
   pk: (userId: string) => `USER#${userId}`,
   sk: (goalId: string) => `GOAL#${goalId}`,
+};
+
+export const HouseholdKeys = {
+  pk: (householdId: string) => `HOUSEHOLD#${householdId}`,
+  sk: () => "META",
+};
+
+export const HouseholdMemberKeys = {
+  pk: (userId: string) => `USER#${userId}`,
+  sk: (householdId: string) => `HOUSEHOLD#${householdId}`,
 };

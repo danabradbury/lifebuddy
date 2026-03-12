@@ -15,5 +15,7 @@ export const config = {
     tasks: required("TABLE_TASKS"),
     taskCompletions: required("TABLE_TASK_COMPLETIONS"),
     goals: required("TABLE_GOALS"),
+    households: required("TABLE_HOUSEHOLDS"),
+    householdMembers: required("TABLE_HOUSEHOLD_MEMBERS"),
   },
 };
