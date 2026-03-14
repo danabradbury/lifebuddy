@@ -32,6 +32,7 @@ import {
   handleCreateHousehold,
   handleListHouseholds,
 } from "./households";
+import { handleHouseholdFocus } from "./households-focus";
 
 export async function handler(
   event: APIGatewayProxyEventV2,
@@ -146,6 +147,10 @@ export async function handler(
     }
     if (path.endsWith("/households") && method === "POST") {
       return await handleCreateHousehold(event, user);
+    }
+
+    if (path.endsWith("/households/focus") && method === "GET") {
+      return await handleHouseholdFocus(event, user);
     }
 
     return json(404, { message: "Not Found" });

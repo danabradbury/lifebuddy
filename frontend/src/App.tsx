@@ -44,6 +44,13 @@ type AuthState = {
 
 type TabId = "focus" | "habits" | "tasks" | "goals";
 
+type HouseholdFocusEntry = {
+  userId: string;
+  email: string;
+  habitsDueToday: { habitId: string; name: string; status: HabitStatus }[];
+  tasksDueTodayOrOverdue: { taskId: string; title: string; dueDate?: string }[];
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
 
 function isHabitDueToday(habit: HabitWithStatus, dateStr: string): boolean {
@@ -79,6 +86,12 @@ export const App: React.FC = () => {
   const isKiosk =
     typeof window !== "undefined" &&
     window.location.pathname.toLowerCase().endsWith("/kiosk");
+  const [householdFocus, setHouseholdFocus] = useState<HouseholdFocusEntry[]>(
+    [],
+  );
+  const [selectedHouseholdUser, setSelectedHouseholdUser] = useState<
+    string | "all"
+  >("all");
 
   useEffect(() => {
     const stored = window.localStorage.getItem("lifebuddy-auth");
@@ -136,6 +149,16 @@ export const App: React.FC = () => {
     setGoals(data);
   }, [auth, apiBase]);
 
+  const loadHouseholdFocus = useCallback(async () => {
+    if (!auth) return;
+    const res = await fetch(`${apiBase}/households/focus`, {
+      headers: { Authorization: `Bearer ${auth.token}` },
+    });
+    if (!res.ok) throw new Error("Failed to load household focus");
+    const data = (await res.json()) as HouseholdFocusEntry[];
+    setHouseholdFocus(data);
+  }, [auth, apiBase]);
+
   useEffect(() => {
     if (!auth) return;
     setLoading(true);
@@ -147,13 +170,12 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (!auth || !isKiosk) return;
+    void loadHouseholdFocus();
     const id = window.setInterval(() => {
-      void loadHabits();
-      void loadTasks();
-      void loadGoals();
+      void loadHouseholdFocus();
     }, 60000);
     return () => window.clearInterval(id);
-  }, [auth, isKiosk, loadHabits, loadTasks, loadGoals]);
+  }, [auth, isKiosk, loadHouseholdFocus]);
 
   const groupedHabits = useMemo(() => {
     const groups: Record<string, HabitWithStatus[]> = {
@@ -335,18 +357,13 @@ export const App: React.FC = () => {
   const hasNextUp = nextUpHabits.length > 0 || nextUpTasks.length > 0;
 
   if (isKiosk) {
+    const visibleEntries =
+      selectedHouseholdUser === "all"
+        ? householdFocus
+        : householdFocus.filter((e) => e.userId === selectedHouseholdUser);
+
     return (
       <div className="page">
-        {hasNextUp && (
-          <div className="nag-bar">
-            <strong>Next up:</strong>{" "}
-            {[...nextUpHabits.map((h) => h.name), ...nextUpTasks.map((t) => t.title)]
-              .slice(0, 4)
-              .join(", ")}{" "}
-            — do one before you leave.
-          </div>
-        )}
-
         <header className="header">
           <div>
             <h1>Focus</h1>
@@ -354,47 +371,60 @@ export const App: React.FC = () => {
               Habits due today and tasks due or overdue.
             </p>
           </div>
+          <div className="header-actions">
+            <nav className="tabs">
+              <button
+                type="button"
+                className={selectedHouseholdUser === "all" ? "active" : ""}
+                onClick={() => setSelectedHouseholdUser("all")}
+              >
+                All
+              </button>
+              {householdFocus.map((e) => (
+                <button
+                  key={e.userId}
+                  type="button"
+                  className={
+                    selectedHouseholdUser === e.userId ? "active" : ""
+                  }
+                  onClick={() => setSelectedHouseholdUser(e.userId)}
+                >
+                  {e.email}
+                </button>
+              ))}
+            </nav>
+          </div>
         </header>
 
         {error && <p className="error">{error}</p>}
         {loading && <p className="subtitle">Loading…</p>}
 
-        <section className="next-up">
-          {pendingHabitsDueToday.length === 0 && nextUpTasks.length === 0 ? (
-            <p>Nothing due right now. Nice work.</p>
-          ) : (
-            <div className="cards">
-              {pendingHabitsDueToday.map((habit) => (
-                <HabitCard
-                  key={habit.habitId}
-                  habit={habit}
-                  onAction={updateHabitStatus}
-                />
-              ))}
-              {nextUpTasks.map((task) => (
-                <TaskCard
-                  key={task.taskId}
-                  task={task}
-                  onComplete={() => void completeTask(task)}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {habitsDueToday.length > 0 && (
-          <section className="habit-groups">
-            <h2>All habits due today</h2>
-            <div className="cards">
-              {habitsDueToday.map((h) => (
-                <HabitCard
-                  key={h.habitId}
-                  habit={h}
-                  onAction={updateHabitStatus}
-                />
-              ))}
-            </div>
-          </section>
+        {visibleEntries.length === 0 ? (
+          <p className="subtitle">No household focus data yet.</p>
+        ) : (
+          visibleEntries.map((entry) => (
+            <section key={entry.userId} className="habit-groups">
+              <h2>{entry.email} – Next up</h2>
+              <div className="cards">
+                {entry.habitsDueToday.map((h) => (
+                  <div key={h.habitId} className="card habit-card">
+                    <h3>{h.name}</h3>
+                    {h.status === "done" && (
+                      <p className="description">Completed for today</p>
+                    )}
+                  </div>
+                ))}
+                {entry.tasksDueTodayOrOverdue.map((t) => (
+                  <div key={t.taskId} className="card task-card">
+                    <h3>{t.title}</h3>
+                    {t.dueDate && (
+                      <p className="description">Due {t.dueDate}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
         )}
       </div>
     );
