@@ -99,4 +99,3 @@ function json(statusCode: number, body: unknown) {
 function badRequest(message: string) {
   return json(400, { message });
 }
-

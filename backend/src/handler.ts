@@ -28,10 +28,7 @@ import {
   handleListGoals,
   handleUpdateGoal,
 } from "./goals";
-import {
-  handleCreateHousehold,
-  handleListHouseholds,
-} from "./households";
+import { handleCreateHousehold, handleListHouseholds } from "./households";
 import { handleHouseholdFocus } from "./households-focus";
 
 export async function handler(

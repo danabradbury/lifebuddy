@@ -117,7 +117,9 @@ export const App: React.FC = () => {
         );
         let status: HabitStatus = "pending";
         if (checkinsRes.ok) {
-          const checkins = (await checkinsRes.json()) as { status: HabitStatus }[];
+          const checkins = (await checkinsRes.json()) as {
+            status: HabitStatus;
+          }[];
           if (checkins.length > 0)
             status = checkins[checkins.length - 1]!.status;
         }
@@ -163,9 +165,9 @@ export const App: React.FC = () => {
     if (!auth) return;
     setLoading(true);
     setError(null);
-    Promise.all([loadHabits(), loadTasks(), loadGoals()]).catch((e) =>
-      setError((e as Error).message),
-    ).finally(() => setLoading(false));
+    Promise.all([loadHabits(), loadTasks(), loadGoals()])
+      .catch((e) => setError((e as Error).message))
+      .finally(() => setLoading(false));
   }, [auth, loadHabits, loadTasks, loadGoals]);
 
   useEffect(() => {
@@ -203,15 +205,11 @@ export const App: React.FC = () => {
     [tasks],
   );
   const tasksOverdue = useMemo(
-    () =>
-      pendingTasks.filter(
-        (t) => t.dueDate && t.dueDate < today,
-      ),
+    () => pendingTasks.filter((t) => t.dueDate && t.dueDate < today),
     [pendingTasks, today],
   );
   const tasksDueToday = useMemo(
-    () =>
-      pendingTasks.filter((t) => t.dueDate === today),
+    () => pendingTasks.filter((t) => t.dueDate === today),
     [pendingTasks, today],
   );
   const nextUpHabits = useMemo(
@@ -273,9 +271,7 @@ export const App: React.FC = () => {
         body: JSON.stringify({ status }),
       });
       setHabits((prev) =>
-        prev.map((h) =>
-          h.habitId === habit.habitId ? { ...h, status } : h,
-        ),
+        prev.map((h) => (h.habitId === habit.habitId ? { ...h, status } : h)),
       );
     } catch (e) {
       setError((e as Error).message);
@@ -335,10 +331,7 @@ export const App: React.FC = () => {
           </label>
           {error && <p className="error">{error}</p>}
           <div className="auth-actions">
-            <button
-              disabled={loading}
-              onClick={() => void handleAuth("login")}
-            >
+            <button disabled={loading} onClick={() => void handleAuth("login")}>
               Log in
             </button>
             <button
@@ -384,9 +377,7 @@ export const App: React.FC = () => {
                 <button
                   key={e.userId}
                   type="button"
-                  className={
-                    selectedHouseholdUser === e.userId ? "active" : ""
-                  }
+                  className={selectedHouseholdUser === e.userId ? "active" : ""}
                   onClick={() => setSelectedHouseholdUser(e.userId)}
                 >
                   {e.email}
@@ -435,7 +426,10 @@ export const App: React.FC = () => {
       {hasNextUp && (
         <div className="nag-bar">
           <strong>Next up:</strong>{" "}
-          {[...nextUpHabits.map((h) => h.name), ...nextUpTasks.map((t) => t.title)]
+          {[
+            ...nextUpHabits.map((h) => h.name),
+            ...nextUpTasks.map((t) => t.title),
+          ]
             .slice(0, 4)
             .join(", ")}{" "}
           — do one before you leave.
@@ -696,8 +690,8 @@ export const App: React.FC = () => {
                     )}
                     {g.linkedTaskIds.length + g.linkedHabitIds.length > 0 && (
                       <p className="description">
-                        {g.linkedTaskIds.length} tasks, {g.linkedHabitIds.length}{" "}
-                        habits linked
+                        {g.linkedTaskIds.length} tasks,{" "}
+                        {g.linkedHabitIds.length} habits linked
                       </p>
                     )}
                   </div>
@@ -787,9 +781,7 @@ const TaskCard: React.FC<{
     <div className="card task-card">
       <div>
         <h3>{task.title}</h3>
-        {task.description && (
-          <p className="description">{task.description}</p>
-        )}
+        {task.description && <p className="description">{task.description}</p>}
         {task.durationMinutes != null && (
           <p className="description">{task.durationMinutes} min</p>
         )}
@@ -882,9 +874,7 @@ const CreateHabitForm: React.FC<{
             <span>Frequency</span>
             <select
               value={frequency}
-              onChange={(e) =>
-                setFrequency(e.target.value as HabitFrequency)
-              }
+              onChange={(e) => setFrequency(e.target.value as HabitFrequency)}
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>

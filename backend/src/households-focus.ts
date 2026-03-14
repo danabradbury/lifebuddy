@@ -115,4 +115,3 @@ export async function handleHouseholdFocus(
     body: JSON.stringify(entries),
   };
 }
-
