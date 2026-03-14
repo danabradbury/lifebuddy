@@ -16,6 +16,11 @@ Globals:
         TABLE_USERS: !Ref UsersTable
         TABLE_HABITS: !Ref HabitsTable
         TABLE_HABIT_CHECKINS: !Ref HabitCheckinsTable
+        TABLE_TASKS: !Ref TasksTable
+        TABLE_TASK_COMPLETIONS: !Ref TaskCompletionsTable
+        TABLE_GOALS: !Ref GoalsTable
+        TABLE_HOUSEHOLDS: !Ref HouseholdsTable
+        TABLE_HOUSEHOLD_MEMBERS: !Ref HouseholdMembersTable
 
 Parameters:
   StageName:
@@ -54,6 +59,16 @@ Resources:
             TableName: !Ref HabitsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref HabitCheckinsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TaskCompletionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GoalsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HouseholdsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HouseholdMembersTable
       Events:
         AuthSignup:
           Type: HttpApi
@@ -103,12 +118,113 @@ Resources:
             ApiId: !Ref LifebuddyApi
             Path: /habits/{id}/checkins
             Method: GET
+        TasksList:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /tasks
+            Method: GET
+        TasksCreate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /tasks
+            Method: POST
+        TaskGet:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /tasks/{id}
+            Method: GET
+        TaskUpdate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /tasks/{id}
+            Method: PATCH
+        TaskDelete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /tasks/{id}
+            Method: DELETE
+        TaskCompletionsCreate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /tasks/{id}/completions
+            Method: POST
+        TaskCompletionsList:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /tasks/{id}/completions
+            Method: GET
+        GoalsList:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /goals
+            Method: GET
+        GoalsCreate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /goals
+            Method: POST
+        GoalGet:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /goals/{id}
+            Method: GET
+        GoalUpdate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /goals/{id}
+            Method: PATCH
+        GoalDelete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /goals/{id}
+            Method: DELETE
+        HouseholdsList:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /households
+            Method: GET
+        HouseholdsCreate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /households
+            Method: POST
+        HouseholdsFocus:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /households/focus
+            Method: GET
   ReminderFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: backend/
       Handler: dist/reminder.handler
       Events: {}
+      Environment:
+        Variables:
+          JWT_SECRET: !Ref JwtSecret
+          TABLE_USERS: !Ref UsersTable
+          TABLE_HABITS: !Ref HabitsTable
+          TABLE_HABIT_CHECKINS: !Ref HabitCheckinsTable
+          TABLE_TASKS: !Ref TasksTable
+          TABLE_TASK_COMPLETIONS: !Ref TaskCompletionsTable
+          TABLE_GOALS: !Ref GoalsTable
+          TABLE_HOUSEHOLDS: !Ref HouseholdsTable
+          TABLE_HOUSEHOLD_MEMBERS: !Ref HouseholdMembersTable
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
@@ -116,6 +232,16 @@ Resources:
             TableName: !Ref HabitsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref HabitCheckinsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TaskCompletionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GoalsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HouseholdsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HouseholdMembersTable
 
   ReminderScheduler:
     Type: AWS::Events::Rule
@@ -165,6 +291,81 @@ Resources:
           KeyType: RANGE
 
   HabitCheckinsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  TaskCompletionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  GoalsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  HouseholdsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  HouseholdMembersTable:
     Type: AWS::DynamoDB::Table
     Properties:
       BillingMode: PAY_PER_REQUEST

@@ -26,20 +26,26 @@ export async function handleCreateHabit(
     return badRequest("Missing body");
   }
 
+  const body = JSON.parse(event.body) as Partial<Habit>;
   const {
     name,
     description,
     frequency = "daily",
     preferredTimeOfDay = "any",
     reminderChannel = "in_app",
-  } = JSON.parse(event.body) as Partial<Habit>;
+    dayOfWeek,
+    dayOfMonth,
+  } = body;
 
   if (!name) {
     return badRequest("Habit name is required");
   }
 
   const now = new Date().toISOString();
-  const base: Omit<Habit, "description" | "reminderChannel"> = {
+  const base: Omit<
+    Habit,
+    "description" | "reminderChannel" | "dayOfWeek" | "dayOfMonth"
+  > = {
     habitId: randomUUID(),
     userId: user.sub,
     name,
@@ -54,6 +60,8 @@ export async function handleCreateHabit(
     ...base,
     ...(description !== undefined ? { description } : {}),
     ...(reminderChannel !== undefined ? { reminderChannel } : {}),
+    ...(dayOfWeek !== undefined ? { dayOfWeek } : {}),
+    ...(dayOfMonth !== undefined ? { dayOfMonth } : {}),
   };
 
   await docClient.send(
@@ -129,6 +137,14 @@ export async function handleUpdateHabit(
   if (body.isActive !== undefined) {
     updates.push("isActive = :isActive");
     values[":isActive"] = body.isActive;
+  }
+  if (body.dayOfWeek !== undefined) {
+    updates.push("dayOfWeek = :dayOfWeek");
+    values[":dayOfWeek"] = body.dayOfWeek;
+  }
+  if (body.dayOfMonth !== undefined) {
+    updates.push("dayOfMonth = :dayOfMonth");
+    values[":dayOfMonth"] = body.dayOfMonth;
   }
 
   if (!updates.length) {
