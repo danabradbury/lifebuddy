@@ -1,0 +1,660 @@
+openapi: 3.0.3
+info:
+  title: Lifebuddy API
+  description: |
+    Habits, tasks, goals, and households. Most endpoints require a JWT from `POST /auth/login`.
+    Use the token in the **Authorization** header as `Bearer <token>`.
+  version: 1.0.0
+
+servers:
+  - url: https://your-api-id.execute-api.us-east-1.amazonaws.com
+    description: Replace with your SAM-deployed API URL (e.g. from `sam deploy` output)
+  - url: http://localhost:3001
+    description: Local (e.g. SAM local start-api)
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  service: { type: string, example: "lifebuddy-backend" }
+
+  /auth/signup:
+    post:
+      summary: Create account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      userId: { type: string }
+                      email: { type: string }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorMessage" }
+
+  /auth/login:
+    post:
+      summary: Log in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      userId: { type: string }
+                      email: { type: string }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorMessage" }
+
+  /habits:
+    get:
+      summary: List habits
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Habit" }
+    post:
+      summary: Create habit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                frequency: { type: string, enum: [daily, weekly, monthly, custom], default: daily }
+                preferredTimeOfDay: { type: string, enum: [morning, afternoon, evening, any], default: any }
+                dayOfWeek: { type: integer, minimum: 0, maximum: 6, description: "0-6 Sun-Sat, for weekly" }
+                dayOfMonth: { type: integer, minimum: 1, maximum: 31, description: "For monthly" }
+                reminderChannel: { type: string, enum: [none, in_app, email] }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Habit" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /habits/{id}:
+    parameters:
+      - $ref: "#/components/parameters/HabitId"
+    patch:
+      summary: Update habit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                frequency: { type: string, enum: [daily, weekly, monthly, custom] }
+                preferredTimeOfDay: { type: string, enum: [morning, afternoon, evening, any] }
+                dayOfWeek: { type: integer }
+                dayOfMonth: { type: integer }
+                reminderChannel: { type: string, enum: [none, in_app, email] }
+                isActive: { type: boolean }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Habit" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      summary: Delete habit
+      responses:
+        "204":
+          description: No content
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /habits/{id}/checkins:
+    parameters:
+      - $ref: "#/components/parameters/HabitId"
+    post:
+      summary: Record check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [done, snoozed, skipped] }
+                reason: { type: string }
+                date: { type: string, format: date, description: "YYYY-MM-DD, default today" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HabitCheckin" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    get:
+      summary: List check-ins for today (for this habit)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/HabitCheckin" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tasks:
+    get:
+      summary: List tasks
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Task" }
+    post:
+      summary: Create task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                dueDate: { type: string, format: date }
+                durationMinutes: { type: integer }
+                status: { type: string, enum: [pending, done, cancelled], default: pending }
+                recurrence: { type: object, properties: { unit: { type: string, enum: [days, months] }, value: { type: integer } } }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /tasks/{id}:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+    get:
+      summary: Get task
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      summary: Update task
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                dueDate: { type: string, format: date }
+                durationMinutes: { type: integer }
+                status: { type: string, enum: [pending, done, cancelled] }
+                recurrence: { type: object }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      summary: Delete task
+      responses:
+        "204":
+          description: No content
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tasks/{id}/completions:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+    post:
+      summary: Mark task complete (records completion and sets task status to done)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TaskCompletion" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    get:
+      summary: List task completions
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TaskCompletion" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /goals:
+    get:
+      summary: List goals
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Goal" }
+    post:
+      summary: Create goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                targetDate: { type: string, format: date }
+                status: { type: string, enum: [active, completed, paused], default: active }
+                linkedTaskIds: { type: array, items: { type: string }, default: [] }
+                linkedHabitIds: { type: array, items: { type: string }, default: [] }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Goal" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /goals/{id}:
+    parameters:
+      - $ref: "#/components/parameters/GoalId"
+    get:
+      summary: Get goal
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Goal" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      summary: Update goal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                targetDate: { type: string, format: date }
+                status: { type: string, enum: [active, completed, paused] }
+                linkedTaskIds: { type: array, items: { type: string } }
+                linkedHabitIds: { type: array, items: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Goal" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      summary: Delete goal
+      responses:
+        "204":
+          description: No content
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /households:
+    get:
+      summary: List my households (memberships)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/HouseholdMember" }
+    post:
+      summary: Create household
+      description: Creates a new household and adds you as owner. Use this to create the first household, then add members with POST /households/{householdId}/members.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, example: "Smith Family" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  household:
+                    type: object
+                    properties:
+                      householdId: { type: string }
+                      name: { type: string }
+                      createdAt: { type: string }
+                      updatedAt: { type: string }
+                  membership:
+                    $ref: "#/components/schemas/HouseholdMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /households/focus:
+    get:
+      summary: Household focus (habits due today + tasks due/overdue)
+      description: Returns focus data for the current user (and eventually all household members). Used by the kiosk view.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    userId: { type: string }
+                    email: { type: string }
+                    habitsDueToday:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          habitId: { type: string }
+                          name: { type: string }
+                          status: { type: string, enum: [pending, done, snoozed, skipped] }
+                    tasksDueTodayOrOverdue:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          taskId: { type: string }
+                          title: { type: string }
+                          dueDate: { type: string }
+
+  /households/{householdId}/members:
+    parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema: { type: string }
+        description: ID of the household (from GET /households)
+    post:
+      summary: Add member to household by email
+      description: Invite an existing Lifebuddy user (by email) to this household. You must already be a member.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  membership: { $ref: "#/components/schemas/HouseholdMember" }
+        "400":
+          description: You are already a member / invalid body
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorMessage" }
+        "403":
+          description: You are not a member of this household
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorMessage" }
+        "404":
+          description: User not found with that email
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorMessage" }
+        "409":
+          description: That user is already a member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorMessage" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token from POST /auth/login
+
+  parameters:
+    HabitId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Habit ID
+    TaskId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Task ID
+    GoalId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Goal ID
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorMessage" }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorMessage" }
+
+  schemas:
+    ErrorMessage:
+      type: object
+      properties:
+        message: { type: string }
+
+    Habit:
+      type: object
+      properties:
+        habitId: { type: string }
+        userId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        frequency: { type: string, enum: [daily, weekly, monthly, custom] }
+        preferredTimeOfDay: { type: string, enum: [morning, afternoon, evening, any] }
+        dayOfWeek: { type: integer }
+        dayOfMonth: { type: integer }
+        reminderChannel: { type: string }
+        isActive: { type: boolean }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    HabitCheckin:
+      type: object
+      properties:
+        habitId: { type: string }
+        userId: { type: string }
+        date: { type: string, format: date }
+        status: { type: string, enum: [done, snoozed, skipped] }
+        reason: { type: string }
+        createdAt: { type: string }
+
+    Task:
+      type: object
+      properties:
+        taskId: { type: string }
+        userId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        dueDate: { type: string, format: date }
+        durationMinutes: { type: integer }
+        recurrence: { type: object }
+        status: { type: string, enum: [pending, done, cancelled] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    TaskCompletion:
+      type: object
+      properties:
+        taskId: { type: string }
+        userId: { type: string }
+        completedAt: { type: string }
+        date: { type: string, format: date }
+
+    Goal:
+      type: object
+      properties:
+        goalId: { type: string }
+        userId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        targetDate: { type: string, format: date }
+        status: { type: string, enum: [active, completed, paused] }
+        linkedTaskIds: { type: array, items: { type: string } }
+        linkedHabitIds: { type: array, items: { type: string } }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    Household:
+      type: object
+      properties:
+        householdId: { type: string }
+        name: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    HouseholdMember:
+      type: object
+      properties:
+        householdId: { type: string }
+        userId: { type: string }
+        role: { type: string, enum: [owner, member] }
+        joinedAt: { type: string }
+        householdName: { type: string }

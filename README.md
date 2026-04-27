@@ -87,6 +87,33 @@ Environment variables are wired via `template.yaml` and `backend/src/config.ts`:
 - `TABLE_HABITS`
 - `TABLE_HABIT_CHECKINS`
 
+### API and Postman
+
+The API is described by an **OpenAPI (Swagger) spec** at [`openapi.yaml`](openapi.yaml). You can use it to call the API from **Postman** (or any OpenAPI client).
+
+1. **Import the spec**
+   - In Postman: **Import** → choose `openapi.yaml` from the repo (or drag and drop).
+   - Postman creates a collection with all endpoints.
+
+2. **Set the base URL**
+   - After import, set the collection (or environment) **Base URL** to your deployed API, e.g.  
+     `https://<your-api-id>.execute-api.<region>.amazonaws.com`  
+     If you use a stage (e.g. `dev`), include it:  
+     `https://<your-api-id>.execute-api.<region>.amazonaws.com/dev`
+   - You can copy the URL from the `sam deploy` output or from the frontend `.env` (`VITE_API_BASE` without a trailing path).
+
+3. **Get a JWT**
+   - **POST** `/auth/login` with body `{"email":"you@example.com","password":"your-password"}` (or use **POST** `/auth/signup` first).
+   - Copy the `token` from the response.
+
+4. **Use the token on other requests**
+   - In the collection (or folder), set **Authorization** → Type: **Bearer Token** → paste the token.
+   - Or add a header: `Authorization: Bearer <token>`.
+
+5. **Example: create a household and add members**
+   - **POST** `/households` with body `{"name":"My House"}` → response includes `householdId`.
+   - **POST** `/households/{householdId}/members` with body `{"email":"member@example.com"}` to add a member (they must already have an account).
+
 ### NPM scripts
 
 From the repo root:

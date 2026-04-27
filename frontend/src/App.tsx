@@ -42,7 +42,14 @@ type AuthState = {
   email: string;
 } | null;
 
-type TabId = "focus" | "habits" | "tasks" | "goals";
+type TabId = "focus" | "habits" | "tasks" | "goals" | "household";
+
+type HouseholdMembership = {
+  householdId: string;
+  householdName: string;
+  role: string;
+  joinedAt: string;
+};
 
 type HouseholdFocusEntry = {
   userId: string;
@@ -92,6 +99,11 @@ export const App: React.FC = () => {
   const [selectedHouseholdUser, setSelectedHouseholdUser] = useState<
     string | "all"
   >("all");
+  const [households, setHouseholds] = useState<HouseholdMembership[]>([]);
+  const [addMemberEmail, setAddMemberEmail] = useState<Record<string, string>>(
+    {},
+  );
+  const [addMemberLoading, setAddMemberLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const stored = window.localStorage.getItem("lifebuddy-auth");
@@ -161,6 +173,16 @@ export const App: React.FC = () => {
     setHouseholdFocus(data);
   }, [auth, apiBase]);
 
+  const loadHouseholds = useCallback(async () => {
+    if (!auth) return;
+    const res = await fetch(`${apiBase}/households`, {
+      headers: { Authorization: `Bearer ${auth.token}` },
+    });
+    if (!res.ok) throw new Error("Failed to load households");
+    const data = (await res.json()) as HouseholdMembership[];
+    setHouseholds(data);
+  }, [auth, apiBase]);
+
   useEffect(() => {
     if (!auth) return;
     setLoading(true);
@@ -178,6 +200,11 @@ export const App: React.FC = () => {
     }, 60000);
     return () => window.clearInterval(id);
   }, [auth, isKiosk, loadHouseholdFocus]);
+
+  useEffect(() => {
+    if (!auth || tab !== "household") return;
+    void loadHouseholds();
+  }, [auth, tab, loadHouseholds]);
 
   const groupedHabits = useMemo(() => {
     const groups: Record<string, HabitWithStatus[]> = {
@@ -302,6 +329,38 @@ export const App: React.FC = () => {
       setError((e as Error).message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function addHouseholdMember(householdId: string) {
+    if (!auth) return;
+    const email = (addMemberEmail[householdId] ?? "").trim().toLowerCase();
+    if (!email) {
+      setError("Enter an email address");
+      return;
+    }
+    setAddMemberLoading((prev) => ({ ...prev, [householdId]: true }));
+    setError(null);
+    try {
+      const res = await fetch(
+        `${apiBase}/households/${householdId}/members`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            Authorization: `Bearer ${auth.token}`,
+          },
+          body: JSON.stringify({ email }),
+        },
+      );
+      const body = (await res.json()) as { message?: string };
+      if (!res.ok) throw new Error(body.message ?? "Failed to add member");
+      setAddMemberEmail((prev) => ({ ...prev, [householdId]: "" }));
+      void loadHouseholds();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setAddMemberLoading((prev) => ({ ...prev, [householdId]: false }));
     }
   }
 
@@ -470,6 +529,13 @@ export const App: React.FC = () => {
               onClick={() => setTab("goals")}
             >
               Goals
+            </button>
+            <button
+              type="button"
+              className={tab === "household" ? "active" : ""}
+              onClick={() => setTab("household")}
+            >
+              Household
             </button>
           </nav>
           <span className="user-email">{auth.email}</span>
@@ -694,6 +760,48 @@ export const App: React.FC = () => {
                         {g.linkedHabitIds.length} habits linked
                       </p>
                     )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
+
+      {tab === "household" && (
+        <>
+          <section className="habit-groups">
+            <h2>Households</h2>
+            {households.length === 0 ? (
+              <p>You’re not in any household yet. Create one via API or add yourself manually in DynamoDB.</p>
+            ) : (
+              <div className="cards">
+                {households.map((h) => (
+                  <div key={h.householdId} className="card habit-card">
+                    <h3>{h.householdName}</h3>
+                    <p className="description">Your role: {h.role}</p>
+                    <div className="habit-actions" style={{ marginTop: 8 }}>
+                      <input
+                        type="email"
+                        placeholder="Member email"
+                        value={addMemberEmail[h.householdId] ?? ""}
+                        onChange={(e) =>
+                          setAddMemberEmail((prev) => ({
+                            ...prev,
+                            [h.householdId]: e.target.value,
+                          }))
+                        }
+                        style={{ marginRight: 8 }}
+                      />
+                      <button
+                        type="button"
+                        className="primary"
+                        disabled={addMemberLoading[h.householdId]}
+                        onClick={() => void addHouseholdMember(h.householdId)}
+                      >
+                        {addMemberLoading[h.householdId] ? "Adding…" : "Add member"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

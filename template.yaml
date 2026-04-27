@@ -208,6 +208,12 @@ Resources:
             ApiId: !Ref LifebuddyApi
             Path: /households/focus
             Method: GET
+        HouseholdsAddMember:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref LifebuddyApi
+            Path: /households/{householdId}/members
+            Method: POST
   ReminderFunction:
     Type: AWS::Serverless::Function
     Properties:

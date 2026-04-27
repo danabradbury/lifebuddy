@@ -28,7 +28,11 @@ import {
   handleListGoals,
   handleUpdateGoal,
 } from "./goals";
-import { handleCreateHousehold, handleListHouseholds } from "./households";
+import {
+  handleAddHouseholdMember,
+  handleCreateHousehold,
+  handleListHouseholds,
+} from "./households";
 import { handleHouseholdFocus } from "./households-focus";
 
 export async function handler(
@@ -148,6 +152,13 @@ export async function handler(
 
     if (path.endsWith("/households/focus") && method === "GET") {
       return await handleHouseholdFocus(event, user);
+    }
+
+    const householdMembersMatch = path.match(/\/households\/([^/]+)\/members$/);
+    if (householdMembersMatch && method === "POST") {
+      const [, householdId] = householdMembersMatch;
+      event.pathParameters = { ...(event.pathParameters ?? {}), householdId };
+      return await handleAddHouseholdMember(event, user);
     }
 
     return json(404, { message: "Not Found" });
